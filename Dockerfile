@@ -1,27 +1,17 @@
-# Use Ubuntu as the base image for the build stage
-FROM ubuntu:latest AS build
+# Build stage
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 
-# Install JDK and Maven
-RUN apt-get update && \
-    apt-get install openjdk-17-jdk maven -y
-
-# Set the working directory
 WORKDIR /app
-
-# Copy the entire project into the container
 COPY . .
 
-# Use Maven to build the project and create the jar file
 RUN mvn clean package -DskipTests
 
-# Use a slim JDK image for the runtime stage
-FROM openjdk:21-jdk-slim
+# Runtime stage
+FROM eclipse-temurin:21-jdk-jammy
 
-# Expose the application's port
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8081
 
-# Copy the jar file from the build stage to the runtime stage
-COPY --from=build /app/target/hostingAPI.jar api1.jar
-
-# Set the entrypoint to run the jar file
-ENTRYPOINT ["java", "-jar", "api1.jar"]
+ENTRYPOINT ["java","-jar","app.jar"]
